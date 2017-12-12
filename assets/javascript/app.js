@@ -18,7 +18,11 @@ var config = {
     storageBucket: "fir-1-f3c4f.appspot.com",
     messagingSenderId: "64732880523"
   };
-  
+  // <th>Train Name</th>
+  // <th>Destination</th>
+  // <th>Start Time</th>
+  // <th>Frequency</th>
+  // <th>Minutes</th>
   
   firebase.initializeApp(config);
   
@@ -29,10 +33,10 @@ var config = {
     event.preventDefault();
   
     // Grabs user input
-    var empName = $("#employee-name-input").val().trim();
-    var empRole = $("#role-input").val().trim();
-    var empStart = moment($("#start-input").val().trim(), "DD/MM/YY").format("X");
-    var empRate = $("#rate-input").val().trim();
+    var trainName = $("#employee-name-input").val().trim();
+    var destination = $("#role-input").val().trim();
+    var startTime = moment($("#start-input").val().trim(), "DD/MM/YY").format("X");
+    var frequency = $("#rate-input").val().trim();
   
     // Creates local "temporary" object for holding employee data
     var newEmp = {
@@ -63,6 +67,41 @@ var config = {
   
   // 3. Create Firebase event for adding employee to the database and a row in the html when a user adds an entry
   database.ref().on("child_added", function(childSnapshot, prevChildKey) {
+
+    // Determine the current time in military time
+    var calculatedCurrentTime = moment.utc(moment().format("HH:mm"));
+    
+    // convert the frequency to a number
+    var frequency = parseInt(snapshot.val().frequency);
+    
+    // Convert the first train time to a moment object so we can run calculations
+    var firstTrainTime = snapshot.val().firstTrain;
+    var firstTrainTimeCalculated = moment(firstTrainTime, "HH:mm").subtract(1, "years");
+    
+    // Calculate the difference from the current time to the time the first train left
+    var diffTime = moment().diff(moment(firstTrainTimeCalculated), "minutes");
+   
+    // Time apart (remainder)
+    var timeRemainder = diffTime % frequency;
+    
+    // Minutes until next train arrives
+    var minutesNextTrain = frequency - timeRemainder;
+   
+
+    // Next Train
+    var nextArrival = moment().add(minutesNextTrain, "minutes");
+
+    
+    // Write values from database to the html document
+    $(output.trainData).find("tbody").append($("<tr>").append
+        ($("<td>").append(snapshot.val().trainName),
+        $("<td>").append(snapshot.val().destination),
+        $("<td>").append(snapshot.val().frequency),
+        $("<td>").append(moment(nextArrival).format("HH:mm")),
+        $("<td>").append(minutesNextTrain)
+       
+        )
+      );
   
     console.log(childSnapshot.val());
   
